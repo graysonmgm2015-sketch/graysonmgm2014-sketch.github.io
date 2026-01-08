@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon GO Events - Current & Upcoming</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #e0f7fa, #ffffff);
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #3b4cca;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        header img {
+            width: 300px;
+            max-width: 90%;
+            height: auto;
+        }
+        header h1 {
+            margin: 10px 0;
+            font-size: 2.5em;
+        }
+        #current-date {
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        h2 {
+            text-align: center;
+            color: #3b4cca;
+        }
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        .event-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            overflow: hidden;
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .event-card:hover {
+            transform: translateY(-10px);
+        }
+        .event-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .card-content {
+            padding: 20px;
+        }
+        .card-content h3 {
+            margin: 0 0 10px;
+            color: #ffcb05;
+            font-size: 1.6em;
+        }
+        .dates {
+            font-weight: bold;
+            color: #3b4cca;
+            margin-bottom: 10px;
+        }
+        .short-desc {
+            font-size: 1em;
+            color: #555;
+            margin: 10px 0;
+        }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            padding-top: 50px;
+        }
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 900px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .pokemon-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .pokemon {
+            text-align: center;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            min-width: 100px;
+        }
+        .pokemon img {
+            height: 80px;
+            width: auto;
+        }
+        .details-sections section {
+            margin-bottom: 30px;
+        }
+        .details-sections h3 {
+            color: #3b4cca;
+            border-bottom: 2px solid #ffcb05;
+            padding-bottom: 5px;
+        }
+        .details-sections ul {
+            list-style: none;
+            padding: 0;
+        }
+        .details-sections li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .details-sections li img {
+            height: 40px;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #3b4cca;
+            color: white;
+            margin-top: 50px;
+        }
+        footer a {
+            color: #ffcb05;
+            text-decoration: none;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Updated logo source: Now using the official Wikimedia-hosted version (high-quality, reliably loads, no hotlink issues) -->
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Pok%C3%A9mon_GO_logo.svg/800px-Pok%C3%A9mon_GO_logo.svg.png" alt="Pokémon GO Logo">
+        <h1>Pokémon GO Events</h1>
+        <div id="current-date">As of: Loading...</div>
+    </header>
+
+    <div class="container">
+        <h2>Ongoing Events</h2>
+        <div id="ongoing-grid" class="events-grid loading">Loading events from Leek Duck...</div>
+
+        <h2>Upcoming Events</h2>
+        <div id="upcoming-grid" class="events-grid loading">Loading events from Leek Duck...</div>
+    </div>
+
+    <footer>
+        <p>Events data dynamically loaded from Leek Duck via community scraper (updates automatically when Niantic announces new events).<br>
+        For full official infographics and any extra details: <a href="https://leekduck.com/events/" target="_blank">Leek Duck</a> | <a href="https://pokemongolive.com/events" target="_blank">pokemongolive.com/events</a></p>
+    </footer>
+
+    <script>
+        // Display current date
+        const dateElement = document.getElementById('current-date');
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        dateElement.textContent = 'As of: ' + now.toLocaleDateString('en-US', options);
+
+        // Helper: Title case for event types
+        function toTitleCase(str) {
+            return str.replace(/-/g, ' ')
+                      .replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        }
+
+        // Format dates
+        function formatShortDate(iso) {
+            const date = new Date(iso);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        function formatFullDate(iso) {
+            const date = new Date(iso);
+            return date.toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true }) + ' (local time where applicable)';
+        }
+
+        // Modal open/close
+        function openModal(id) {
+            document.getElementById(id).style.display = 'block';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Create event card with smarter short description
+        function createCard(event) {
+            const startStr = formatShortDate(event.start);
+            const endStr = formatShortDate(event.end);
+            let description = event.heading || '';
+
+            const ed = event.extraData;
+            if (!description && ed) {
+                if (event.eventType.includes('spotlight')) {
+                    if (ed.spotlight) {
+                        description = `${ed.spotlight.name || 'Unknown Pokémon'} Spotlight — Bonus: ${ed.spotlight.bonus || 'N/A'}`;
+                    }
+                } else if (event.eventType === 'community-day' && ed.communityday) {
+                    const main = ed.communityday.spawns?.[0]?.name || ed.communityday.pokemon || 'Unknown Pokémon';
+                    description = `Community Day: ${main}`;
+                } else if (event.eventType.includes('raid-day') || event.eventType.includes('raid-hour')) {
+                    // Could add main raid boss here if available
+                }
+            }
+            if (!description) description = toTitleCase(event.eventType);
+
+            return `
+                <div class="event-card" onclick="openModal('${event.eventID}')">
+                    <img src="${event.image || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="${event.name}">
+                    <div class="card-content">
+                        <h3>${event.name}</h3>
+                        <p class="dates">${startStr} – ${endStr}</p>
+                        <p class="short-desc">${description}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Create detailed modal content — now with MUCH more detail
+        function createModalContent(event) {
+            const ed = event.extraData || {};
+            let html = `
+                <img src="${event.image || 'https://via.placeholder.com/800x400?text=No+Image'}" style="width:100%; border-radius:10px; margin-bottom:20px;" alt="${event.name} banner">
+                <h2>${event.name}</h2>
+                <p class="dates"><strong>${formatFullDate(event.start)} to ${formatFullDate(event.end)}</strong></p>
+                ${event.heading ? `<p><em>${event.heading}</em></p>` : ''}
+                ${event.link ? `<p><a href="${event.link}" target="_blank" style="font-size:1.2em; color:#3b4cca; font-weight:bold;">View Full Infographic on Leek Duck →</a></p>` : ''}
+                <div class="details-sections">
+            `;
+
+            // Spotlight Hour specific (prominent)
+            if (event.eventType.includes('spotlight') && ed.spotlight) {
+                const sp = ed.spotlight;
+                html += `<section><h3>Spotlight Pokémon</h3>
+                         <div class="pokemon-list"><div class="pokemon"><img src="${sp.image}"><p>${sp.name} ${sp.canBeShiny ? '✨' : ''}</p></div></div>
+                         <p><strong>Hourly Bonus:</strong> ${sp.bonus}</p></section>`;
+                if (sp.list?.length) {
+                    html += `<section><h3>Increased Spawns During the Hour</h3><div class="pokemon-list">`;
+                    sp.list.forEach(p => {
+                        html += `<div class="pokemon"><img src="${p.image}"><p>${p.name} ${p.canBeShiny ? '✨' : ''}</p></div>`;
+                    });
+                    html += `</div></section>`;
+                }
+            }
+
+            // Community Day specific
+            if (event.eventType === 'community-day' && ed.communityday) {
+                const cd = ed.communityday;
+                if (cd.spawns?.length) {
+                    html += `<section><h3>Featured Pokémon</h3><div class="pokemon-list">`;
+                    cd.spawns.forEach(p => html += `<div class="pokemon"><img src="${p.image}"><p>${p.name}</p></div>`);
+                    html += `</div></section>`;
+                }
+                // Bonuses, shinies, research handled in general sections below
+            }
+
+            // General sections (covers most events with extra detail)
+            // Event Bonuses
+            if (ed.bonuses?.length) {
+                html += `<section><h3>Event Bonuses</h3><ul>`;
+                ed.bonuses.forEach(b => {
+                    const img = b.image || b.icon || '';
+                    const text = b.text || b;
+                    html += `<li>${img ? `<img src="${img}"> ` : ''}${text}</li>`;
+                });
+                html += `</ul></section>`;
+            }
+
+            // Shiny Releases / Boosted
+            let shinies = ed.shinyreleases || ed.shinies || ed.shiny || [];
+            if (shinies.length) {
+                html += `<section><h3>Shiny Releases or Boosted</h3><div class="pokemon-list">`;
+                shinies.forEach(s => {
+                    const img = s.image || s.shinyImage || '';
+                    const name = s.name || s;
+                    html += `<div class="pokemon">${img ? `<img src="${img}">` : ''}<p>${name} ✨</p></div>`;
+                });
+                html += `</div></section>`;
+            }
+
+            // Debuts (if separate from shinies)
+            if (ed.debuts?.length) {
+                html += `<section><h3>New Pokémon Debuts</h3><div class="pokemon-list">`;
+                ed.debuts.forEach(d => {
+                    html += `<div class="pokemon"><img src="${d.image}"><p>${d.name} (New!)</p></div>`;
+                });
+                html += `</div></section>`;
+            }
+
+            // Wild / Increased Spawns
+            let spawns = ed.wildspawns || ed.spawns || ed.wild || [];
+            if (spawns.length) {
+                html += `<section><h3>Increased Wild Encounters</h3><div class="pokemon-list">`;
+                spawns.forEach(p => {
+                    const rarity = p.rarity ? ` (${p.rarity})` : '';
+                    const shiny = p.canBeShiny ? ' ✨' : '';
+                    html += `<div class="pokemon"><img src="${p.image}"><p>${p.name}${rarity}${shiny}</p></div>`;
+                });
+                html += `</div></section>`;
+            }
+
+            // Raid Bosses
+            let bosses = [];
+            if (ed.raidbattles?.bosses) bosses = ed.raidbattles.bosses;
+            else if (ed.raids?.bosses) bosses = ed.raids.bosses;
+            else if (ed.raidbosses) bosses = ed.raidbosses;
+            if (bosses.length) {
+                html += `<section><h3>Raid Bosses</h3><div class="pokemon-list">`;
+                bosses.forEach(b => {
+                    const tier = b.tier ? `${b.tier}-Star` : '';
+                    const shiny = b.canBeShiny ? ' ✨' : '';
+                    html += `<div class="pokemon"><img src="${b.image}"><p>${b.name} ${tier}${shiny}</p></div>`;
+                });
+                html += `</div></section>`;
+            }
+
+            // Eggs
+            if (ed.eggs && Object.keys(ed.eggs).length) {
+                html += `<section><h3>Egg Hatches</h3>`;
+                Object.keys(ed.eggs).sort().forEach(km => {
+                    const list = ed.eggs[km];
+                    if (list.length) {
+                        html += `<h4>${km}-km Eggs</h4><div class="pokemon-list">`;
+                        list.forEach(p => {
+                            const shiny = p.canBeShiny ? ' ✨' : '';
+                            html += `<div class="pokemon"><img src="${p.image}"><p>${p.name}${shiny}</p></div>`;
+                        });
+                        html += `</div>`;
+                    }
+                });
+                html += `</section>`;
+            }
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        // Load events
+        async function loadEvents() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.min.json');
+                if (!response.ok) throw new Error('Failed to load events');
+                const events = await response.json();
+
+                const ongoing = [];
+                const upcoming = [];
+
+                events.forEach(event => {
+                    const start = new Date(event.start);
+                    const end = new Date(event.end);
+                    if (now >= start && now <= end) {
+                        ongoing.push(event);
+                    } else if (start > now) {
+                        upcoming.push(event);
+                    }
+                });
+
+                upcoming.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+                // Render ongoing
+                const ongoingGrid = document.getElementById('ongoing-grid');
+                if (ongoing.length === 0) {
+                    ongoingGrid.innerHTML = '<p class="loading">No ongoing events right now.</p>';
+                } else {
+                    ongoingGrid.classList.remove('loading');
+                    ongoingGrid.innerHTML = '';
+                    ongoing.forEach(event => {
+                        ongoingGrid.innerHTML += createCard(event);
+                        const modal = document.createElement('div');
+                        modal.id = event.eventID;
+                        modal.className = 'modal';
+                        modal.innerHTML = `<div class="modal-content"><span class="close" onclick="closeModal('${event.eventID}')">&times;</span>${createModalContent(event)}</div>`;
+                        document.body.appendChild(modal);
+                    });
+                }
+
+                // Render upcoming
+                const upcomingGrid = document.getElementById('upcoming-grid');
+                if (upcoming.length === 0) {
+                    upcomingGrid.innerHTML = '<p class="loading">No upcoming events announced yet.</p>';
+                } else {
+                    upcomingGrid.classList.remove('loading');
+                    upcomingGrid.innerHTML = '';
+                    upcoming.forEach(event => {
+                        upcomingGrid.innerHTML += createCard(event);
+                        const modal = document.createElement('div');
+                        modal.id = event.eventID;
+                        modal.className = 'modal';
+                        modal.innerHTML = `<div class="modal-content"><span class="close" onclick="closeModal('${event.eventID}')">&times;</span>${createModalContent(event)}</div>`;
+                        document.body.appendChild(modal);
+                    });
+                }
+            } catch (error) {
+                document.getElementById('ongoing-grid').innerHTML = '<p class="loading">Error loading events. Please refresh the page.</p>';
+                document.getElementById('upcoming-grid').innerHTML = '';
+                console.error(error);
+            }
+        }
+
+        loadEvents();
+    </script>
+</body>
+</html>
